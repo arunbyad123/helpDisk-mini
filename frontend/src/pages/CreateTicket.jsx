@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = 'http://localhost:5000/api';
 
 function CreateTicket() {
   const { user } = useAuth();
@@ -27,30 +27,27 @@ function CreateTicket() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-  try {
-    const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [];
-    
-    console.log('Sending ticket data:', { ...formData, tags: tagsArray }); // Debug log
-    
-    const response = await axios.post(`${API_URL}/tickets`, {
-      ...formData,
-      tags: tagsArray
-    });
+    try {
+      const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [];
+      
+      const response = await axios.post(`${API_URL}/tickets`, {
+        ...formData,
+        tags: tagsArray
+      });
 
-    alert('Ticket created successfully!');
-    navigate(`/tickets/${response.data.ticket._id}`);
-  } catch (err) {
-    console.error('Full error:', err); // Detailed error
-    console.error('Error response:', err.response?.data); // Backend error
-    setError(err.response?.data?.message || err.message || 'Failed to create ticket');
-  } finally {
-    setLoading(false);
-  }
-};
+      alert('Ticket created successfully!');
+      navigate(`/tickets/${response.data.ticket._id}`);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create ticket');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <Navbar />

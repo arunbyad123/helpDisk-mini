@@ -61,8 +61,8 @@ const ticketSchema = new mongoose.Schema({
   },
   comments: [commentSchema],
   slaDeadline: {
-    type: Date
-    // REMOVED required: true - let the pre-save hook set it
+    type: Date,
+    required: true
   },
   slaStatus: {
     type: String,
@@ -79,10 +79,9 @@ const ticketSchema = new mongoose.Schema({
   timestamps: true 
 });
 
-// Generate ticket number and set SLA deadline BEFORE validation
-ticketSchema.pre('validate', async function(next) {
+// Generate ticket number before saving
+ticketSchema.pre('save', async function(next) {
   if (this.isNew) {
-    // Generate ticket number
     const count = await mongoose.model('Ticket').countDocuments();
     this.ticketNumber = `TKT-${String(count + 1).padStart(6, '0')}`;
     
@@ -90,11 +89,7 @@ ticketSchema.pre('validate', async function(next) {
     const hours = this.priority === 'Critical' ? 2 : 4;
     this.slaDeadline = new Date(Date.now() + hours * 60 * 60 * 1000);
   }
-  next();
-});
-
-// Update SLA status before saving
-ticketSchema.pre('save', function(next) {
+  
   // Update SLA status
   const now = new Date();
   const timeLeft = this.slaDeadline - now;

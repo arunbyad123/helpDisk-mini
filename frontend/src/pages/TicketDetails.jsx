@@ -5,7 +5,7 @@ import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = 'http://localhost:5000/api';
 const socket = io('http://localhost:5000');
 
 function TicketDetails() {
