@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import path from 'path';
 
 import authRoutes from './routes/auth.js';
 import ticketRoutes from './routes/tickets.js';
@@ -15,7 +16,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
   }
 });
@@ -28,16 +29,16 @@ app.use(express.urlencoded({ extended: true }));
 // Socket.IO connection
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
-  
+
   socket.on('join_ticket', (ticketId) => {
     socket.join(`ticket_${ticketId}`);
     console.log(`User ${socket.id} joined ticket ${ticketId}`);
   });
-  
+
   socket.on('leave_ticket', (ticketId) => {
     socket.leave(`ticket_${ticketId}`);
   });
-  
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
@@ -46,28 +47,40 @@ io.on('connection', (socket) => {
 // Make io available to routes
 app.set('io', io);
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/users', userRoutes);
 
-// Root route
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'HelpDesk Mini API is running',
-    version: '1.0.0',
-    endpoints: {
-      auth: '/api/auth',
-      tickets: '/api/tickets',
-      users: '/api/users'
-    }
+// Serve frontend in production
+const __dirname = path.resolve();
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from React build
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+  // Handle React routing, return all requests to index.html
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
   });
-});
+} else {
+  // Root route for development
+  app.get('/', (req, res) => {
+    res.json({
+      message: 'HelpDesk Mini API is running',
+      version: '1.0.0',
+      endpoints: {
+        auth: '/api/auth',
+        tickets: '/api/tickets',
+        users: '/api/users'
+      }
+    });
+  });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ 
+  res.status(500).json({
     message: 'Something went wrong!',
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
